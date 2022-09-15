@@ -159,11 +159,12 @@ Map_data Structure:
 """
 
 
-def read_yaml_bag(data_length: int = 50, from_back: bool = False) -> dict:
+def read_yaml_bag(path: str, data_length: int = 50, from_back: bool = False) -> dict:
     """
     Reads the yaml file and creates two different data dicts
 
     See structure of data above
+    :param path:        Path to bag
     :param data_length: Specifies the amount of maps to read
     :param from_back:   If true will read data from the back instead of front
 
@@ -175,14 +176,13 @@ def read_yaml_bag(data_length: int = 50, from_back: bool = False) -> dict:
     :todo:  Add the id, probability and color of each cone in the data (currently not useful as they are always zero)
 
     """
-    with open("./bag.yaml") as f:
+    with open(path) as f:
         map_data = {}
         if from_back:
             maps = list(yaml.load_all(f, yaml.FullLoader))[-data_length:]
         else:
             maps = list(yaml.load_all(f, yaml.FullLoader))[:data_length]
         # Needed try/except since we end with Ctrl-C which cuts data off uncleanly at the end
-        # Some lists in cone_data therefore have different lengths if "same_length" parameter isn't used!
         try:
             for slam_map in maps:
                 time_stamp = slam_map["header"]["seq"]
@@ -281,16 +281,17 @@ def read_map_csv(path: str) -> tuple[list[float], list[float], list[int]]:
 
 
 def main():
-    #map_data = read_yaml_bag(data_length=50, from_back=True)    # Comment out if you've written the data to csv
-    #write_to("test1.csv", map_data)                             #
-    fig, ax = plot_real_cones()
+    map_data = read_yaml_bag(path="bags/bag.yaml",data_length=50, from_back=True)    # Comment out if you've written the data to csv
+    write_to("csv_files/slam_map_from_back.csv", map_data)                             #
+    write_to("json_files/slam_map_from_back.json", map_data)                             #
+    #fig, ax = plot_real_cones()
     # Link to all colormaps:
     # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
-    x_vals, y_vals, times = read_map_csv("test1.csv")
-    print(times)
-    ax.scatter(x_vals, y_vals, s=2, alpha=0.4, c=times, cmap="cool_r")
-    plt.show()
+    #x_vals, y_vals, times = read_map_csv("./csv_files/slam_map_from_back.csv")
+    #print(times)
+    #ax.scatter(x_vals, y_vals, s=2, alpha=0.4, c=times, cmap="cool_r")
+    #plt.show()
 
 
 if __name__ == '__main__':
