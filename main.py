@@ -282,7 +282,7 @@ def read_map_csv(path: str) -> tuple[list[float], list[float], list[int]]:
 
 def main():
     # map_data = read_yaml_bag(path="bags/bag.yaml",data_length=50, from_back=True)
-    # written the data to csv write_to("csv_files/slam_map_from_back.csv", map_data)
+    # write_to("csv_files/slam_map_from_back.csv", map_data)
     # write_to("json_files/slam_map_from_back.json", map_data)
     fig, ax = plot_real_cones()
     # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
