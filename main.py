@@ -197,7 +197,7 @@ def read_yaml_bag(path: str, data_length: int = 50, from_back: bool = False) -> 
                     covariance = cone["covariance"]
                     map_data[time_stamp].append({"time_stamp": time_stamp, "x": x, "y": y, "covariance": covariance, "id": i})
         except Exception as e:
-            print("Whoops")
+            print("Whoops", e)
         return map_data
 
 
@@ -281,17 +281,15 @@ def read_map_csv(path: str) -> tuple[list[float], list[float], list[int]]:
 
 
 def main():
-    map_data = read_yaml_bag(path="bags/bag.yaml",data_length=50, from_back=True)    # Comment out if you've written the data to csv
-    write_to("csv_files/slam_map_from_back.csv", map_data)                             #
-    write_to("json_files/slam_map_from_back.json", map_data)                             #
-    #fig, ax = plot_real_cones()
-    # Link to all colormaps:
-    # https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
+    # map_data = read_yaml_bag(path="bags/bag.yaml",data_length=50, from_back=True)
+    # written the data to csv write_to("csv_files/slam_map_from_back.csv", map_data)
+    # write_to("json_files/slam_map_from_back.json", map_data)
+    fig, ax = plot_real_cones()
+    # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
-    #x_vals, y_vals, times = read_map_csv("./csv_files/slam_map_from_back.csv")
-    #print(times)
-    #ax.scatter(x_vals, y_vals, s=2, alpha=0.4, c=times, cmap="cool_r")
-    #plt.show()
+    x_vals, y_vals, times = read_map_csv("./csv_files/slam_map_from_back.csv")
+    ax.scatter(x_vals, y_vals, s=2, alpha=0.4, c=times, cmap="cool_r")
+    plt.show()
 
 
 if __name__ == '__main__':
