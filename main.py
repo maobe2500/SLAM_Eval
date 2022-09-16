@@ -160,7 +160,7 @@ Map_data Structure:
 """
 
 
-def read_yaml_bag(path: str, data_length: int = 50, from_back: bool = False) -> dict:
+def read_yaml_bag(path: str, data_length: int = 10, from_back: bool = False) -> dict:
     """
     Reads the yaml file and creates two different data dicts
 
@@ -179,16 +179,14 @@ def read_yaml_bag(path: str, data_length: int = 50, from_back: bool = False) -> 
     """
     with open(path) as f:
         map_data = {}
-        """
         if from_back:
             maps = list(yaml.load_all(f, yaml.FullLoader))[-data_length:]
         else:
-            maps = yaml.load_all(f, yaml.FullLoader)#[:data_length]
-        """
+            maps = list(yaml.load_all(f, yaml.FullLoader))[:data_length]
         # Needed try/except since we end with Ctrl-C which cuts data off uncleanly at the end
         try:
             i = 0
-            for slam_map in yaml.parse(f):
+            for slam_map in maps:
                 print("Working still")
                 time_stamp = slam_map["header"]["seq"]
                 mapped_cones = slam_map["cones"]
@@ -294,12 +292,11 @@ def read_map_csv(path: str) -> tuple[list[float], list[float], list[int]]:
             y_vals.append(float(row[2]))
         return x_vals, y_vals, times
 
-
 def main():
-    map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml", data_length=10)
+    map_data = read_yaml_bag(path="bags/bag.yaml", data_length=10)
     print(map_data)
-    write_to("csv_files/mapped_cones_data.csv", map_data)
-    write_to("json_files/mapped_cones_data.json", map_data)
+    write_to("csv_files/map_with_stats.csv", map_data)
+    write_to("json_files/map_with_stats.json", map_data)
     fig, ax = plot_real_cones()
     # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
