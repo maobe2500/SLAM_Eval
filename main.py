@@ -4,7 +4,7 @@ import json
 import matplotlib.pyplot as plt
 
 # Type definitions: (mostly for readability)
-"""
+
 Mapped_Coordinate = tuple[float, float]
 Covariance = list[float, float, float, float]
 Time_Stamp = int
@@ -12,7 +12,7 @@ Index = int
 Figure = plt.Figure
 Axes = plt.axes
 Time_Stamped_data = list[tuple[Mapped_Coordinate, Covariance, Time_Stamp]]
-"""
+
 blue = [
     [-17.0129, 9.72719],
     [-12.7541, 12.8712],
@@ -160,7 +160,7 @@ Map_data Structure:
 """
 
 
-def read_yaml_bag(path, data_length, from_back):#: str, data_length: int = 50, from_back: bool = False) -> dict:
+def read_yaml_bag(path: str, data_length: int = 50, from_back: bool = False) -> dict:
     """
     Reads the yaml file and creates two different data dicts
 
@@ -179,33 +179,42 @@ def read_yaml_bag(path, data_length, from_back):#: str, data_length: int = 50, f
     """
     with open(path) as f:
         map_data = {}
+        """
         if from_back:
             maps = list(yaml.load_all(f, yaml.FullLoader))[-data_length:]
         else:
-            maps = list(yaml.load_all(f, yaml.FullLoader))[:data_length]
+            maps = yaml.load_all(f, yaml.FullLoader)#[:data_length]
+        """
         # Needed try/except since we end with Ctrl-C which cuts data off uncleanly at the end
         try:
             i = 0
-            for slam_map in maps:
+            for slam_map in yaml.parse(f):
+                print("Working still")
                 time_stamp = slam_map["header"]["seq"]
                 mapped_cones = slam_map["cones"]
                 map_data[time_stamp] = []
                 for i, cone in enumerate(mapped_cones):
-                    #color = cone["color"]
-                    #prob = cone["probability"]      # Is always zero for now
-                    #id = cone["id"]                 # Is also always zero, otherwise it'd be very useful
+                    # color = cone["color"]
+                    # prob = cone["probability"]      # Is always zero for now
+                    # id = cone["id"]                 # Is also always zero, otherwise it'd be very useful
                     x = cone["x"]
                     y = cone["y"]
                     covariance = cone["covariance"]
-                    map_data[time_stamp].append({"time_stamp": time_stamp, "x": x, "y": y, "covariance": covariance, "id": i})
-                i+=1
-                print(f"{(i/len(maps))*100}% complete!")
+                    map_data[time_stamp].append(
+                        {"time_stamp": time_stamp, "x": x, "y": y, "covariance": covariance, "id": i})
+                if i >= data_length:
+                    break
+                print(i)
+                i += 1
+                #print(f"{(i / len(maps)) * 100}% complete!")
+                print(map_data)
         except Exception as e:
             print("Whoops", e)
+            return map_data
         return map_data
 
 
-def write_to(filename, data, fieldnames=None):#: str, data: dict, fieldnames: list[str] = None) -> None:
+def write_to(filename, data: dict, fieldnames: list[str] = None) -> None:
     """
     Writes data from a dictionary to a file of type csv or json.
 
@@ -235,7 +244,7 @@ def write_to(filename, data, fieldnames=None):#: str, data: dict, fieldnames: li
         print(f"{filename} Done!")
 
 
-def plot_real_cones(axes_limits): #: int = 25) -> tuple[Figure, Axes]
+def plot_real_cones(axes_limits: int = 25) -> tuple[Figure, Axes]:
     """
     Plots the cones from the list of coordinates in "blue", "big_orange" and "yellow" (Maybe wrong?)
 
@@ -266,7 +275,7 @@ def plot_real_cones(axes_limits): #: int = 25) -> tuple[Figure, Axes]
     return fig, ax
 
 
-def read_map_csv(path):#: str) -> tuple[list[float], list[float], list[int]]:
+def read_map_csv(path: str) -> tuple[list[float], list[float], list[int]]:
     """
     Reads the csv file created by the read_yaml_bag function
 
@@ -287,7 +296,8 @@ def read_map_csv(path):#: str) -> tuple[list[float], list[float], list[int]]:
 
 
 def main():
-    map_data = read_yaml_bag(path="bags/mapped_cones_data.bag",data_length=50, from_back=True)
+    map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml", data_length=10)
+    print(map_data)
     write_to("csv_files/mapped_cones_data.csv", map_data)
     write_to("json_files/mapped_cones_data.json", map_data)
     fig, ax = plot_real_cones()
