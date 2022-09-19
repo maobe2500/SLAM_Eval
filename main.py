@@ -11,17 +11,6 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import numpy as np
 from matplotlib.patches import Ellipse
 
-# Type definitions: (mostly for readability)
-"""
-Mapped_Coordinate = tuple[float, float]
-Covariance = list[float, float, float, float]
-Time_Stamp = int
-Index = int
-Figure = plt.Figure
-Axes = plt.axes
-Time_Stamped_data = list[tuple[Mapped_Coordinate, Covariance, Time_Stamp]]
-"""
-
 
 # ----------- SHould really be changed to be in a file -------------------
 blue = [
