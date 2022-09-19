@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Tuple
 
 import matplotlib
@@ -11,6 +12,7 @@ import numpy as np
 from matplotlib.patches import Ellipse
 
 # Type definitions: (mostly for readability)
+"""
 Mapped_Coordinate = tuple[float, float]
 Covariance = list[float, float, float, float]
 Time_Stamp = int
@@ -18,8 +20,10 @@ Index = int
 Figure = plt.Figure
 Axes = plt.axes
 Time_Stamped_data = list[tuple[Mapped_Coordinate, Covariance, Time_Stamp]]
+"""
 
 
+# ----------- SHould really be changed to be in a file -------------------
 blue = [
     [-17.0129, 9.72719],
     [-12.7541, 12.8712],
@@ -101,6 +105,7 @@ yellow = [
     [-13.3484, 4.84491],
     [2.90884, 7.57594]
 ]
+# ---------------------------------------------------------------------------
 
 """
 ------------------------------------------
@@ -132,66 +137,28 @@ float64 probability
 int32 id
 
 ------------------------------------------
-Map_data Structure:
-
-    Example of data:
-        {"4146": 
-            [
-                {"id": 0, 
-                "x": -4.17621032625, 
-                "y": 13.3964256111, 
-                "covariance": [0.00011083743842364538, 3.257323331016572e-23, 
-                               -3.257323331016572e-23, 0.00011083743842364538]}, 
-
-                ...
-
-                {"id": i, 
-                "x": x, 
-                "y": y, 
-                "covariance": [variance_x, variance_yx, 
-                               variance_xy, variance_y]}
-            ]
-        },
-
-         {"time+1": 
-            [
-                {"id": i, 
-                "x": x, 
-                "y": y, 
-                "covariance": [variance_x, variance_yx, 
-                               variance_xy, variance_y]
-                }, 
-            ] 
-            ...
-
 """
 
 
-def read_yaml_bag(path: str, data_length: int = 10, from_back: bool = False) -> dict:
+def read_yaml_bag(path):
     """
-    Reads the yaml file and creates two different data dicts
+    Reads the yaml file and creates a dict with all data
+
+    WARNING: Very slow for big files, needs to be optimized. In the meantime
+             write data to csv file directly after so it only needs to be done once!
 
     See structure of data above
-    :param path:        Path to bag
-    :param data_length: Specifies the amount of maps to read
-    :param from_back:   If true will read data from the back instead of front
+    :param path:         Path to bag file in yaml format
 
     :return map_data:    A dict with the same structure as the bag file
                          where each time_stamp has its own corresponding map,
                          but with all the clutter removed.
-
-
-    :todo:  Add the id, probability and color of each cone in the data (currently not useful as they are always zero)
-
     """
     with open(path) as f:
         map_data = {}
-        maps = list(yaml.load_all(f, yaml.Loader))#[:data_length]
-        print("doing stuff")
+        maps = list(yaml.load_all(f, yaml.Loader))
         # Needed try/except since we end with Ctrl-C which cuts data off uncleanly at the end
         try:
-            maps_todo = len(maps)
-            maps_done = 0
             for slam_map in maps:
                 time_stamp = slam_map["header"]["seq"]
                 mapped_cones = slam_map["cones"]
@@ -209,17 +176,15 @@ def read_yaml_bag(path: str, data_length: int = 10, from_back: bool = False) -> 
                     y = cone["y"]
                     covariance = cone["covariance"]
                     map_data[time_stamp].append({"time_stamp": time_stamp, "x": x, "y": y, "covariance": covariance, "id": i, "inn_x":inn_x, "inn_y": inn_y, "inn_std":inn_std})
-                print(f"Progress: {maps_done/maps_todo*100} %")
-                maps_done += 1
-                maps_todo -= 1
         except Exception as e:
             print("Whoops", e)
         return map_data
 
 
-def write_to(filename: str, data: dict, fieldnames: list[str] = None) -> None:
+def write_to(filename, data, fieldnames=None):
     """
-    Writes data from a dictionary to a file of type csv or json.
+    Writes data from a dictionary to a file of type csv or json
+    depending on the filename.
 
     :param filename:    The filename of the new file
     :param data:        The data to write
@@ -232,7 +197,7 @@ def write_to(filename: str, data: dict, fieldnames: list[str] = None) -> None:
         print("Invalid filetype")
         return
     with open(filename, "w") as f:
-        print(f"Writing to {filename}...")
+        print("Writing to {}...".format(filename))
         if filetype == "json":
             json.dump(data, f)
         else:
@@ -244,16 +209,19 @@ def write_to(filename: str, data: dict, fieldnames: list[str] = None) -> None:
             for time_stamp, cones in data.items():
                 for cone in cones:
                     wr.writerow(cone)
-        print(f"{filename} Done!")
+        print("{} Done!".format(filename))
 
 
-def plot_real_cones(axes_limits: int = 25) -> tuple[Figure, Axes]:
+def plot_real_cones(axes_limits=25):
     """
     Plots the cones from the list of coordinates in "blue", "big_orange" and "yellow" (Maybe wrong?)
+
 
     :param axes_limits: sets the limits both ways for x and y centered on the origin
 
     :return: fig, ax:   Standard matplotlib Figure and Axes objects
+
+    :TODO:              Should be changed to read the .yaml files from ARCS directly instead!
     """
     fig, ax = plt.subplots()
     ax.set_xlim(-axes_limits, axes_limits)
@@ -278,15 +246,19 @@ def plot_real_cones(axes_limits: int = 25) -> tuple[Figure, Axes]:
     return fig, ax
 
 
-def read_map_csv(path: str, animate_maps: bool = False) -> tuple[list[float], list[float], list[int]]:
+def read_map_csv(path, animate_maps = False):
     """
-    Reads the csv file created by the read_yaml_bag function
+    Reads the csv file created by the read_yaml_bag function.
 
-    :param animate_maps:
-    :param path:    Path to the csv file
+    :param path:            Path to the csv file
+    :param animate_maps:    If set to true: gives back a list of maps, where each map is a 
+                            map is a list of (x, y) tuples for a given timestamp.
 
     :return (x_vals, y_vals, times):    tuple containing a all x and y values with times stamps
                                         The time stamp is what signifies what
+
+    :TODO:  Make readable by humans. Current state is due to bugfixing at 3:am.
+
     """
     with open(path) as f:
         rows = csv.reader(f)
@@ -300,20 +272,29 @@ def read_map_csv(path: str, animate_maps: bool = False) -> tuple[list[float], li
             x.append(float(row[1]))
             y.append(float(row[2]))
             y_vals.append(float(row[2]))
+            # --- Not using these right now ---
             cov.append(([float(var) for var in row[3].split(",")[1:-2]]))
             inn_x.append(float(row[5]))
             inn_y.append(float(row[6]))
             inn_std.append(float(row[7]))
+            #----------------------------------
             if animate_maps and int(row[4]) == 0 and i != 0:
                 map_frames.append([x_vals, y_vals, cov, inn_x, inn_y, inn_std])
                 x_vals, y_vals = [], []
         if animate_maps:
             return map_frames
-        return x, y, times, inn_x, inn_y, inn_std
+        return x, y, times
 
 
 class MapAnimation:
     def __init__(self, map_frames):
+        """
+        Creates an animation of all the maps in map_frames list
+
+        :param map_frames: A list of lists of (x, y) tuples of a map at each timestamp
+
+        :TODO:  Needs to be able to read different track setups
+        """
         self.map_frames = map_frames
         self.map_fig = plt.figure()
         self.lim = 25
@@ -324,6 +305,7 @@ class MapAnimation:
         self.init_anim()
 
     def init_anim(self):
+        """ Plots the real cones"""
         bx, by = [], []
         for blue_cone in blue:
             bx.append(blue_cone[0])
@@ -343,6 +325,14 @@ class MapAnimation:
 
 
     def animate_map(self, i):
+        """
+        The "artist" function that the funcanimation needs. Can be thought of as
+        drawing one frame for every i
+
+        :param i:   standard parameter according to matplotlib documentation for Funcanimation
+        :return:    The axes object for the animation, the trailing comma is because
+                    of matplotlibs Funcanimation. It expects a tuple i think.
+        """
         data = self.map_frames[i]
         #self.col = [n for n in range(len(data))]
         self.map_plot.set_offsets(data[1:2])
@@ -350,21 +340,34 @@ class MapAnimation:
         self.map_plot.set_offsets(np.stack((self.map_frames[i][0], self.map_frames[i][1]), axis=1))
         return self.map_plot,
 
-    def animate(self):
+    def animate(self, filename=None):
+        """
+        Animates the maps and saves the file to filename if it is not None
+
+        :param filename:    A .gif file to save the animation to
+        :return:    None
+        """
         ani = FuncAnimation(self.map_fig, self.animate_map, frames=len(self.map_frames), blit=True, interval=20)
         plt.show()
-        ani.save('map.gif', writer=PillowWriter(fps=30))
+        if filename:
+            try:
+                ani.save(filename, writer=PillowWriter(fps=30))
+            except Exception as e:
+                print(e)
+                print("Something went wrong, saving to .gif file")
+                filename = datetime.datetime.now().strftime("map_at_time_%m-%d-%H:%M.gif")
+                ani.save(filename, writer=PillowWriter(fps=30))
 
 
 def main():
     matplotlib.style.use("ggplot")
-    map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml", data_length=10)
+    #map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml", data_length=10)
     # print(map_data)
     #write_to("csv_files/mapped_cones_data.csv", map_data)
     fig, ax = plot_real_cones()
     # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
-    x_vals, y_vals, times, inn_x, inn_y, inn_std = read_map_csv("./csv_files/mapped_cones_data.csv")
+    #x_vals, y_vals, times = read_map_csv("./csv_files/mapped_cones_data.csv")
     #ax.scatter(x_vals, y_vals, s=20, alpha=0.1, c=inn_std, cmap="cool_r")
     #plt.show()
     map_frames = read_map_csv("csv_files/mapped_cones_data.csv", animate_maps=True)
