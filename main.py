@@ -11,91 +11,6 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import numpy as np
 from matplotlib.patches import Ellipse
 
-
-# ----------- SHould really be changed to be in a file -------------------
-blue = [
-    [-17.0129, 9.72719],
-    [-12.7541, 12.8712],
-    [-10.31569, 13.0924],
-    [9.62956, 15.8379],
-    [12.492, 17.0404],
-    [15.1389, 16.5025],
-    [19.5034, 13.6361],
-    [20.8922, 11.7012],
-    [17.5221, 15.3812],
-    [21.4761, 8.79574],
-    [20.9992, 5.27662],
-    [19.9925, 2.24053],
-    [19.0983, -0.671871],
-    [17.1824, -3.23994],
-    [11.114, -6.74408],
-    [-4.06552, 13.3637],
-    [14.2831, -5.26437],
-    [8.25363, -8.53889],
-    [5.06185, -10.1551],
-    [1.42086, -11.9634],
-    [-2.4975, -14.0305],
-    [-5.74864, -16.1217],
-    [-9.34841, -17.1551],
-    [-12.2114, -16.6459],
-    [-14.4625, -14.9249],
-    [-16.2427, -13.276],
-    [-0.131239, 13.3125],
-    [-17.8615, -11.5349],
-    [-19.1945, -8.52656],
-    [-18.9382, -5.15509],
-    [-18.8625, -4.02997],
-    [-18.6872, -0.45783],
-    [-18.1384, 2.83132],
-    [-17.8432, 6.27091],
-    [-15.5443, 12.0063],
-    [3.50416, 13.7245],
-    [7.13676, 14.727]
-]
-
-big_orange = [
-    [-6.90273, 7.20128],
-    [-7.90273, 7.20128],
-    [-6.90273, 13.0924],
-    [-7.90273, 13.0924]
-]
-
-small_orange = []
-
-yellow = [
-    [-12.2686, 6.61784],
-    [-9.65737, 7.2378],
-    [7.33516, 9.03961],
-    [10.548, 10.5892],
-    [13.1479, 11.1316],
-    [15.2725, 10.0791],
-    [16.8037, 8.23821],
-    [16.7063, 6.10772],
-    [15.876, 3.47906],
-    [15.106, 1.5027],
-    [13.6765, -0.472612],
-    [9.41953, -2.84739],
-    [12.0732, -1.43122],
-    [7.26282, -3.9408],
-    [4.65159, -5.15509],
-    [1.78774, -6.66723],
-    [-1.97969, -8.56329],
-    [-3.80615, 7.33616],
-    [-5.18123, -10.5555],
-    [-8.34841, -12.1551],
-    [-9.78487, -11.8592],
-    [-11.3484, -11.1551],
-    [-13.2946, -8.64709],
-    [-14.2998, -6.05581],
-    [-14.0528, -3.05427],
-    [-13.6807, -0.101053],
-    [-13.3484, 2.84491],
-    [-0.595997, 7.27843],
-    [-13.3484, 4.84491],
-    [2.90884, 7.57594]
-]
-# ---------------------------------------------------------------------------
-
 """
 ------------------------------------------
 # CONE INFO FROM GITHUB:
@@ -200,6 +115,23 @@ def write_to(filename, data, fieldnames=None):
                     wr.writerow(cone)
         print("{} Done!".format(filename))
 
+def get_cones(path):
+    """
+    Gets the cones from the specified track 
+
+    :param path: path to the file of the track
+    
+    :return: returns a list of lists with the blue cones, big_orange cones
+             small_orange cones and the yellow cones in that order
+
+    """
+    with open(path) as f:
+        track = list(yaml.load_all(f, yaml.Loader))
+
+        return [track[0]['cones']['blue'],
+                track[0]['cones']['big_orange'],
+                track[0]['cones']['small_orange'],
+                track[0]['cones']['yellow']]
 
 def plot_real_cones(axes_limits=25):
     """
@@ -215,19 +147,12 @@ def plot_real_cones(axes_limits=25):
     fig, ax = plt.subplots()
     ax.set_xlim(-axes_limits, axes_limits)
     ax.set_ylim(-axes_limits, axes_limits)
-    # Ugly code below
-    bx, by = [], []
-    for blue_cone in blue:
-        bx.append(blue_cone[0])
-        by.append(blue_cone[1])
-    Ox, Oy = [], []
-    for big_orange_cone in big_orange:
-        Ox.append(big_orange_cone[0])
-        Oy.append(big_orange_cone[1])
-    yx, yy = [], []
-    for yellow_cone in yellow:
-        yx.append(yellow_cone[0])
-        yy.append(yellow_cone[1])
+    [blue, big_orange, _, yellow] = get_cones("tracks/trackdrive.yaml")
+
+    #zips the x and y values in to separate lists
+    bx, by = zip(*blue)
+    Ox, Oy = zip(*big_orange)
+    yx, yy = zip(*yellow)
 
     ax.scatter(bx, by, c="blue")
     ax.scatter(Ox, Oy, c="orange")
@@ -288,6 +213,8 @@ class MapAnimation:
         self.map_fig = plt.figure()
         self.lim = 25
         self._ax = plt.axes(xlim=(-self.lim, self.lim), ylim=(-self.lim, self.lim))
+        selected_track = "tracks/trackdrive.yaml"
+        [self.blue, self.big_orange, self.small_orange, self.yellow] = get_cones(selected_track)
         self.init_anim()
         self.col = [(1-i/len(self.map_frames), i/len(self.map_frames), 0, 0.5) for i in range(int(len(self.map_frames)))]
         self.map_plot = self._ax.scatter([], [], s=100)
@@ -295,18 +222,10 @@ class MapAnimation:
 
     def init_anim(self):
         """ Plots the real cones"""
-        bx, by = [], []
-        for blue_cone in blue:
-            bx.append(blue_cone[0])
-            by.append(blue_cone[1])
-        Ox, Oy = [], []
-        for big_orange_cone in big_orange:
-            Ox.append(big_orange_cone[0])
-            Oy.append(big_orange_cone[1])
-        yx, yy = [], []
-        for yellow_cone in yellow:
-            yx.append(yellow_cone[0])
-            yy.append(yellow_cone[1])
+         #zips the x and y values in to separate lists
+        bx, by = zip(*self.blue)
+        Ox, Oy = zip(*self.big_orange)
+        yx, yy = zip(*self.yellow)
 
         self._ax.scatter(bx, by, c="blue")
         self._ax.scatter(Ox, Oy, c="orange")
@@ -350,9 +269,9 @@ class MapAnimation:
 
 def main():
     matplotlib.style.use("ggplot")
-    #map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml", data_length=10)
+    map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml")
     # print(map_data)
-    #write_to("csv_files/mapped_cones_data.csv", map_data)
+    write_to("csv_files/mapped_cones_data.csv", map_data)
     fig, ax = plot_real_cones()
     # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
