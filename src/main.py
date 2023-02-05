@@ -44,6 +44,38 @@ int32 id
 """
 
 
+def read_real_yaml_bag(path):
+    """
+    Reads the yaml file for a rosbag filled with real (not simulated) data
+    and creates a dict with all data.
+
+    WARNING: Very slow for big files, needs to be optimized. In the meantime
+    write data to csv file directly after so it only needs to be done once!
+
+    :param path:         Path to bag file in yaml format
+
+    :return map_data:    A dict with the same structure as the bag file
+                         where each time_stamp has its own corresponding map,
+                         but with all the clutter removed.
+    """
+    with open(path) as f:
+        map_data = {}
+        maps = list(yaml.load_all(f, yaml.Loader))
+        # Needed try/except since we end with Ctrl-C which cuts data off uncleanly at the end
+        try:
+            for slam_map in maps:
+                time_stamp = slam_map["header"]["seq"]
+                mapped_cones = slam_map["cones"]
+                map_data[time_stamp] = []
+                for i, cone_with_stats in enumerate(mapped_cones):
+                    x = cone_with_stats["x"]
+                    y = cone_with_stats["y"]
+                    covariance = cone["covariance"]
+                    map_data[time_stamp].append({"time_stamp": time_stamp, "x": x, "y": y, "covariance": covariance, "id": i})
+        except Exception as e:
+            print("Whoops", e)
+        return map_data
+
 def read_yaml_bag(path):
     """
     Reads the yaml file and creates a dict with all data
@@ -96,6 +128,8 @@ def write_to(filename, data, fieldnames=None):
 
     :return: None
     """
+    print("First key : ", list(data.keys())[0])
+
     filetype = filename.split(".")[1]
     if filetype != "csv" and filetype != "json":
         print("Invalid filetype")
@@ -269,16 +303,18 @@ class MapAnimation:
 
 def main():
     matplotlib.style.use("ggplot")
-    map_data = read_yaml_bag(path="bags/mapped_cone_data.yaml")
+    # Change this to the path of the bag you want to read
+    map_data = read_real_yaml_bag(path="bags/real_cone_data.yaml")
     # print(map_data)
-    write_to("csv_files/mapped_cones_data.csv", map_data)
+    # Change this to the path of the csv file you want to write to
+    write_to("csv_files/real_cone_data.csv", map_data)
     fig, ax = plot_real_cones()
     # Link to all colormaps: https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html
     # To use a colormap, add "_r" to the end of the name
     #x_vals, y_vals, times = read_map_csv("./csv_files/mapped_cones_data.csv")
     #ax.scatter(x_vals, y_vals, s=20, alpha=0.1, c=inn_std, cmap="cool_r")
     #plt.show()
-    map_frames = read_map_csv("csv_files/mapped_cones_data.csv", animate_maps=True)
+    map_frames = read_map_csv("csv_files/real_cone_data.csv", animate_maps=True)
     ani = MapAnimation(map_frames)
     ani.animate()
 

@@ -25,12 +25,21 @@ def calculate_mse(path):
             true_x = float(elem[1])
             true_y = float(elem[2])
             times = float(elem[7])
+            print(times)
             sum += (total_x / times - true_x + total_y / times - true_y)**2
 
         print(sum)
 
 if __name__ == "__main__":
     #path = "/root/.ros/slam_data.txt"
-    path = "../csv_files/slam_maha.csv"
+    path = "../csv_files/slam_eucl.csv"
     sum_mse(path)
     calculate_mse(path)
+
+#slam_maha
+#768.5845840339
+#251.22265083839991
+
+#slam_eucl
+#793.6744750649135
+#149.53904887456042
